@@ -1,0 +1,39 @@
+name: Generate Infinyte Brief
+
+on:
+  schedule:
+    # 00:30 UTC = 06:00 AM IST, Monday–Friday
+    - cron: "30 0 * * 1-5"
+  workflow_dispatch:
+    # Also lets you trigger manually from GitHub Actions tab (useful for testing)
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit the generated HTML back to the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Generate brief
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python generate_brief.py
+
+      - name: Commit and push HTML
+        run: |
+          git config user.name  "Infinyte Bot"
+          git config user.email "bot@infinyte.in"
+          git add docs/index.html docs/archive/
+          git diff --staged --quiet || git commit -m "Brief: $(date +'%Y-%m-%d')"
+          git push
